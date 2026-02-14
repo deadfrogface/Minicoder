@@ -1,0 +1,37 @@
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Generated files
+bin/
+gen/
+out/
+release/
+
+# Gradle
+.gradle/
+build/
+
+# Local configuration
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# NDK
+obj/
+
+# Keystore
+*.jks
+*.keystore
+
+# Misc
+.DS_Store
+*.log
+*.swp
+*~

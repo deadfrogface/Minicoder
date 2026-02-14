@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Minicode</string>
+    <string name="select_project_folder">Select project folder</string>
+    <string name="instruction_hint">Describe what should change in this file</string>
+    <string name="generate">GENERATE</string>
+    <string name="apply_changes">APPLY CHANGES</string>
+    <string name="copy">COPY</string>
+    <string name="restore_backup">RESTORE BACKUP</string>
+    <string name="loading_model">Loading model…</string>
+    <string name="file_too_large_title">File too large</string>
+    <string name="file_too_large_message">This file exceeds offline processing limits. Please split or simplify it.</string>
+    <string name="error_too_complex">Task too complex</string>
+    <string name="original">Original</string>
+    <string name="generated">Generated</string>
+</resources>
