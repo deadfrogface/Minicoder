@@ -29,6 +29,7 @@ obj/
 # Keystore
 *.jks
 *.keystore
+.android/
 
 # Misc
 .DS_Store

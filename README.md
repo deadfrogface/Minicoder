@@ -10,18 +10,18 @@ Offline Android AI mini codewriter. Edits one file at a time, outputs full file 
 
 ## Model
 
-Place the GGUF model in the app assets before building:
-
-- **Recommended:** DeepSeek-Coder 1.3B GGUF Q4 (~65–70 MB)
+- **Only one model file** is supported in assets: **DeepSeek-Coder 1.3B GGUF Q4**.
+- **Filename:** `deepseek-coder-1.3b-q4.gguf`
 - **Path:** `app/src/main/assets/deepseek-coder-1.3b-q4.gguf`
+- **Target size:** ~65–70 MB (use Q4_0 or smallest Q4 variant; note: public 1.3B Q4 GGUF are typically 650–800 MB; for APK &lt;120 MB the CI build does **not** bundle the model—add it manually for full offline use).
 
-You can obtain the model from [Hugging Face](https://huggingface.co/) or similar. The app copies it to internal storage on first run.
+Obtain the model from [TheBloke/deepseek-coder-1.3b-instruct-GGUF](https://huggingface.co/TheBloke/deepseek-coder-1.3b-instruct-GGUF) or similar. The app copies it from assets to internal storage on first run.
 
 ## Build
 
-**GitHub Action (recommended):** On every push to `main`, the workflow builds the app with the DeepSeek-Coder 1.3B Q4 model included and uploads the APK as artifact **Minicode-APK**. Download it from the Actions tab → latest run → Artifacts.
+**GitHub Action:** On every push to `main`, the workflow builds a **release** APK (no model bundled, to keep size under 120 MB) and uploads it as artifact **Minicode-APK**. Download from Actions → latest run → Artifacts. Add `deepseek-coder-1.3b-q4.gguf` to the app’s internal storage or assets for full offline use.
 
-**Local:** Open the project in Android Studio. Place `deepseek-coder-1.3b-q4.gguf` in `app/src/main/assets/` (or get it from [TheBloke/deepseek-coder-1.3b-instruct-GGUF](https://huggingface.co/TheBloke/deepseek-coder-1.3b-instruct-GGUF)). Build → Build Bundle(s) / APK(s) → Build APK(s).
+**Local:** Open the project in Android Studio. Optionally place `deepseek-coder-1.3b-q4.gguf` in `app/src/main/assets/` for a full build. Build → Build Bundle(s) / APK(s) → Build APK(s). APK is arm64-only, stripped, minified.
 
 No internet permission is required; the app works fully offline.
 

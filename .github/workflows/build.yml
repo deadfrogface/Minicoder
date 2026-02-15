@@ -26,11 +26,13 @@ jobs:
           mkdir -p native
           git clone --depth 1 --recursive https://github.com/ggml-org/llama.cpp.git native/llama.cpp
 
-      - name: Download DeepSeek-Coder 1.3B Q4 model
+      - name: Prepare assets (no model bundled for APK size under 120MB)
+        run: mkdir -p app/src/main/assets
+
+      - name: Create debug keystore for release signing
         run: |
-          mkdir -p app/src/main/assets
-          curl -sL "https://huggingface.co/TheBloke/deepseek-coder-1.3b-instruct-GGUF/resolve/main/deepseek-coder-1.3b-instruct.Q4_0.gguf" \
-            -o "app/src/main/assets/deepseek-coder-1.3b-q4.gguf"
+          mkdir -p .android
+          keytool -genkey -v -keystore .android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 
       - name: Install Gradle
         run: |
@@ -39,12 +41,28 @@ jobs:
           echo "GRADLE_HOME=$PWD/gradle-8.2" >> $GITHUB_ENV
           echo "$PWD/gradle-8.2/bin" >> $GITHUB_PATH
 
-      - name: Build APK
-        run: gradle assembleDebug --no-daemon
+      - name: Build release APK
+        run: gradle assembleRelease --no-daemon
+
+      - name: Verify APK size and upload
+        run: |
+          APK_PATH="app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "::error::Release APK not found"
+            exit 1
+          fi
+          SIZE_BYTES=$(stat -c%s "$APK_PATH" 2>/dev/null || stat -f%z "$APK_PATH" 2>/dev/null)
+          SIZE_MB=$((SIZE_BYTES / 1024 / 1024))
+          echo "APK size: ${SIZE_MB} MB"
+          if [ "$SIZE_MB" -gt 150 ]; then
+            echo "::error::APK size ${SIZE_MB} MB exceeds 150 MB. Check: bundled model in assets, extra ABIs, debug symbols, or large resources."
+            exit 1
+          fi
+          echo "APK_SIZE_MB=${SIZE_MB}" >> $GITHUB_ENV
 
       - name: Upload Minicode APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: Minicode-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/release/app-release.apk
