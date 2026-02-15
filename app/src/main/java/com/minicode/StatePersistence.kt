@@ -16,10 +16,15 @@ class StatePersistence(context: Context) {
         get() = prefs.getString(KEY_LAST_OUTPUT, "") ?: ""
         set(value) = prefs.edit().putString(KEY_LAST_OUTPUT, value).apply()
 
-    fun saveState(instruction: String, generatedOutput: String) {
+    var useCamelCase: Boolean
+        get() = prefs.getBoolean(KEY_USE_CAMELCASE, false)
+        set(value) = prefs.edit().putBoolean(KEY_USE_CAMELCASE, value).apply()
+
+    fun saveState(instruction: String, generatedOutput: String, useCamelCase: Boolean = false) {
         prefs.edit()
             .putString(KEY_INSTRUCTION, instruction)
             .putString(KEY_LAST_OUTPUT, generatedOutput)
+            .putBoolean(KEY_USE_CAMELCASE, useCamelCase)
             .apply()
     }
 
@@ -36,5 +41,6 @@ class StatePersistence(context: Context) {
         private const val PREFS_NAME = "minicode_state"
         private const val KEY_INSTRUCTION = "instruction"
         private const val KEY_LAST_OUTPUT = "last_generated_output"
+        private const val KEY_USE_CAMELCASE = "use_camelcase"
     }
 }

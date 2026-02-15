@@ -7,7 +7,7 @@
     android:background="@color/minicode_background"
     tools:context=".MainActivity">
 
-    <!-- Top bar: minimal, app identity -->
+    <!-- Top bar -->
     <TextView
         android:id="@+id/toolbarTitle"
         android:layout_width="wrap_content"
@@ -22,7 +22,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Output area: card-style, fills space above input -->
+    <!-- Output area -->
     <ScrollView
         android:id="@+id/scrollOutput"
         android:layout_width="0dp"
@@ -33,7 +33,7 @@
         android:paddingEnd="16dp"
         android:paddingTop="8dp"
         android:paddingBottom="12dp"
-        app:layout_constraintBottom_toTopOf="@id/inputBar"
+        app:layout_constraintBottom_toTopOf="@id/switchCamelCase"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbarTitle">
@@ -79,7 +79,22 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Input bar: rounded, send arrow bottom-right (ChatGPT-style) -->
+    <!-- CamelCase toggle -->
+    <Switch
+        android:id="@+id/switchCamelCase"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"
+        android:checked="false"
+        android:text="@string/use_camelcase"
+        android:textColor="@color/minicode_on_surface"
+        app:layout_constraintBottom_toTopOf="@id/inputBar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Input bar: Generate (send) / Cancel swap -->
     <FrameLayout
         android:id="@+id/inputBar"
         android:layout_width="0dp"
@@ -123,6 +138,22 @@
             android:contentDescription="@string/generate"
             android:padding="8dp"
             android:scaleType="centerInside"
-            android:src="@drawable/ic_send_arrow" />
+            android:src="@drawable/ic_send_arrow"
+            android:visibility="visible" />
+
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_gravity="end|bottom"
+            android:background="@drawable/bg_send_button"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:text="@string/cancel"
+            android:textColor="@color/minicode_send_icon"
+            android:textSize="13sp"
+            android:visibility="gone" />
     </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

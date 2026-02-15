@@ -120,4 +120,92 @@ Java_com_minicode_LlmEngine_nativeGenerate(JNIEnv *env, jobject thiz,
 #endif
 }
 
+JNIEXPORT void JNICALL
+Java_com_minicode_LlmEngine_nativeUnloadModel(JNIEnv *env, jobject thiz) {
+    (void) env;
+    (void) thiz;
+#ifdef LLAMA_AVAILABLE
+    if (s_ctx) { llama_free(s_ctx); s_ctx = nullptr; }
+    if (s_model) { llama_model_free(s_model); s_model = nullptr; }
+    LOGI("Model unloaded");
+#endif
+}
+
+JNIEXPORT void JNICALL
+Java_com_minicode_LlmEngine_nativeGenerateStreaming(JNIEnv *env, jobject thiz,
+    jstring prompt, jint max_tokens, jfloat temperature, jfloat top_p,
+    jfloat repeat_penalty, jint seed, jobject callback) {
+    (void) thiz;
+    (void) top_p;
+    (void) repeat_penalty;
+#ifdef LLAMA_AVAILABLE
+    if (!prompt || !env || !callback || !s_ctx) return;
+    jclass callbackClass = env->GetObjectClass(callback);
+    if (!callbackClass) return;
+    jmethodID onTokenId = env->GetMethodID(callbackClass, "onToken", "(Ljava/lang/String;)V");
+    jmethodID isCancelledId = env->GetMethodID(callbackClass, "isCancelled", "()Z");
+    env->DeleteLocalRef(callbackClass);
+    if (!onTokenId || !isCancelledId) return;
+    jobject callbackRef = env->NewGlobalRef(callback);
+    if (!callbackRef) return;
+
+    const char *promptStr = env->GetStringUTFChars(prompt, nullptr);
+    if (!promptStr) { env->DeleteGlobalRef(callbackRef); return; }
+    const int32_t text_len = (int32_t) strlen(promptStr);
+    const llama_model *model = llama_get_model(s_ctx);
+    const llama_vocab *vocab = llama_model_get_vocab(model);
+    if (!vocab) {
+        env->ReleaseStringUTFChars(prompt, promptStr);
+        env->DeleteGlobalRef(callbackRef);
+        return;
+    }
+    std::vector<llama_token> prompt_tokens(std::min(2048, (int)llama_n_ctx(s_ctx)));
+    int32_t n_prompt = llama_tokenize(vocab, promptStr, text_len,
+        prompt_tokens.data(), (int32_t)prompt_tokens.size(), true, false);
+    env->ReleaseStringUTFChars(prompt, promptStr);
+    if (n_prompt <= 0) { env->DeleteGlobalRef(callbackRef); return; }
+    prompt_tokens.resize((size_t)n_prompt);
+    llama_memory_clear(llama_get_memory(s_ctx), true);
+    const uint32_t n_batch = llama_n_batch(s_ctx);
+    for (int32_t i = 0; i < n_prompt; ) {
+        if (env->CallBooleanMethod(callbackRef, isCancelledId)) break;
+        int32_t chunk = (int32_t) std::min((uint32_t)(n_prompt - i), n_batch);
+        struct llama_batch b = llama_batch_get_one(prompt_tokens.data() + i, chunk);
+        if (llama_decode(s_ctx, b) != 0) break;
+        i += chunk;
+    }
+    llama_sampler_chain_params sparams = llama_sampler_chain_default_params();
+    llama_sampler *smpl = llama_sampler_chain_init(sparams);
+    if (!smpl) { env->DeleteGlobalRef(callbackRef); return; }
+    llama_sampler_chain_add(smpl, llama_sampler_init_temp((double)(temperature <= 0.f ? 1e-6f : temperature)));
+    llama_sampler_chain_add(smpl, llama_sampler_init_dist((uint32_t)(seed & 0xFFFFFFFFu)));
+    char piece[64];
+    const llama_token eos = llama_vocab_eos(vocab);
+    for (int n = 0; n < max_tokens; n++) {
+        if (env->CallBooleanMethod(callbackRef, isCancelledId)) break;
+        llama_token tok = llama_sampler_sample(smpl, s_ctx, -1);
+        if (tok == eos || llama_vocab_is_eog(vocab, tok)) break;
+        int len = llama_token_to_piece(vocab, tok, piece, sizeof(piece), 0, true);
+        if (len > 0) {
+            jstring jpiece = env->NewStringUTF(std::string(piece, (size_t)len).c_str());
+            if (jpiece) {
+                env->CallVoidMethod(callbackRef, onTokenId, jpiece);
+                env->DeleteLocalRef(jpiece);
+            }
+        }
+        struct llama_batch b = llama_batch_get_one(&tok, 1);
+        if (llama_decode(s_ctx, b) != 0) break;
+    }
+    llama_sampler_free(smpl);
+    env->DeleteGlobalRef(callbackRef);
+#else
+    (void) env;
+    (void) prompt;
+    (void) max_tokens;
+    (void) temperature;
+    (void) seed;
+    (void) callback;
+#endif
+}
+
 }

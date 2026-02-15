@@ -14,4 +14,8 @@
     <string name="error_too_complex">Task too complex</string>
     <string name="original">Original</string>
     <string name="generated">Generated</string>
+    <string name="generating">Generating…</string>
+    <string name="cancel">Cancel</string>
+    <string name="use_camelcase">Use CamelCase variables</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
 </resources>
