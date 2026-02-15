@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Minicode" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <item name="colorPrimary">#6F1D1B</item>
-        <item name="colorPrimaryVariant">#6F1D1B</item>
-        <item name="colorOnPrimary">@android:color/white</item>
+    <style name="Theme.Minicode" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/minicode_toolbar</item>
+        <item name="android:navigationBarColor">@color/minicode_background</item>
+        <item name="android:windowBackground">@color/minicode_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="colorPrimary">@color/minicode_accent</item>
+        <item name="colorPrimaryVariant">@color/minicode_accent_light</item>
+        <item name="colorOnPrimary">@color/minicode_send_icon</item>
+        <item name="android:textColorPrimary">@color/minicode_on_surface</item>
+        <item name="android:textColorSecondary">@color/minicode_on_surface_secondary</item>
     </style>
 </resources>

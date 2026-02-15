@@ -1,4 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#6F1D1B</color>
+
+    <!-- Minicode palette: burgundy accent, clean surfaces -->
+    <color name="minicode_accent">#6F1D1B</color>
+    <color name="minicode_accent_light">#9B2D2A</color>
+    <color name="minicode_background">#F2F2F5</color>
+    <color name="minicode_surface">#FFFFFF</color>
+    <color name="minicode_surface_output">#FFFFFF</color>
+    <color name="minicode_on_surface">#1C1C1E</color>
+    <color name="minicode_on_surface_secondary">#6E6E73</color>
+    <color name="minicode_input_bg">#FFFFFF</color>
+    <color name="minicode_input_stroke">#E5E5EA</color>
+    <color name="minicode_send_bg">#6F1D1B</color>
+    <color name="minicode_send_icon">#FFFFFF</color>
+    <color name="minicode_toolbar">#F2F2F5</color>
 </resources>
