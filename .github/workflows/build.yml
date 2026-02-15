@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -25,9 +27,6 @@ jobs:
         run: |
           mkdir -p native
           git clone --depth 1 --recursive https://github.com/ggml-org/llama.cpp.git native/llama.cpp
-
-      - name: Prepare assets (no model bundled for APK size under 120MB)
-        run: mkdir -p app/src/main/assets
 
       - name: Create debug keystore for release signing
         run: |
@@ -54,8 +53,8 @@ jobs:
           SIZE_BYTES=$(stat -c%s "$APK_PATH" 2>/dev/null || stat -f%z "$APK_PATH" 2>/dev/null)
           SIZE_MB=$((SIZE_BYTES / 1024 / 1024))
           echo "APK size: ${SIZE_MB} MB"
-          if [ "$SIZE_MB" -gt 150 ]; then
-            echo "::error::APK size ${SIZE_MB} MB exceeds 150 MB. Check: bundled model in assets, extra ABIs, debug symbols, or large resources."
+          if [ "$SIZE_MB" -gt 400 ]; then
+            echo "::error::APK size ${SIZE_MB} MB exceeds 400 MB."
             exit 1
           fi
           echo "APK_SIZE_MB=${SIZE_MB}" >> $GITHUB_ENV
