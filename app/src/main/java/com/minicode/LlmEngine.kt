@@ -62,7 +62,6 @@ class LlmEngine(context: Context) {
         }
         val output = StringBuilder()
         var lastGeneratedLine: String? = null
-        var previousGeneratedLine: String? = null
         var repetitionCount = 0
         val tokenBuffer = ArrayDeque<String>(Constants.TOKEN_SAFETY_BUFFER_SIZE)
         val startTimeMs = System.currentTimeMillis()
@@ -102,7 +101,6 @@ class LlmEngine(context: Context) {
                             }
                         }
                         else -> {
-                            previousGeneratedLine = lastGeneratedLine
                             lastGeneratedLine = lastCompleteLine
                             repetitionCount = 1
                         }
@@ -127,7 +125,7 @@ class LlmEngine(context: Context) {
             }
         }
         currentCallback = callback
-        val cb = callback!!
+        val cb = requireNotNull(callback)
         executor.execute {
             try {
                 nativeGenerateStreaming(

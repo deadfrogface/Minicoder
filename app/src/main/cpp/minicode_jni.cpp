@@ -136,13 +136,12 @@ Java_com_minicode_LlmEngine_nativeGenerateStreaming(JNIEnv *env, jobject thiz,
     jstring prompt, jint max_tokens, jfloat temperature, jint top_k, jfloat top_p,
     jfloat repeat_penalty, jint repeat_last_n, jint seed, jobject callback) {
     (void) thiz;
-#ifdef LLAMA_AVAILABLE
+#if defined(LLAMA_AVAILABLE) && LLAMA_AVAILABLE
     const double temp = (temperature <= 0.f || temperature > 2.f) ? 0.2 : (double)temperature;
     const int tk = (top_k <= 0) ? 40 : top_k;
     const double tp = (top_p <= 0.f || top_p > 1.f) ? 0.9 : (double)top_p;
     const double rp = (repeat_penalty <= 0.f) ? 1.18 : (double)repeat_penalty;
     const int rln = (repeat_last_n <= 0) ? 128 : repeat_last_n;
-#endif
     if (!prompt || !env || !callback || !s_ctx) return;
     jclass callbackClass = env->GetObjectClass(callback);
     if (!callbackClass) return;
@@ -205,7 +204,8 @@ Java_com_minicode_LlmEngine_nativeGenerateStreaming(JNIEnv *env, jobject thiz,
     }
     llama_sampler_free(smpl);
     env->DeleteGlobalRef(callbackRef);
-#else
+#endif
+#if !defined(LLAMA_AVAILABLE) || !LLAMA_AVAILABLE
     (void) env;
     (void) prompt;
     (void) max_tokens;
