@@ -19,9 +19,9 @@ You can obtain the model from [Hugging Face](https://huggingface.co/) or similar
 
 ## Build
 
-- Open the project in **Android Studio** (it will sync Gradle and create the wrapper if needed).
-- Build locally (no CI, no GitHub dependency).
-- Build → Build Bundle(s) / APK(s) → Build APK(s).
+**GitHub Action (recommended):** On every push to `main`, the workflow builds the app with the DeepSeek-Coder 1.3B Q4 model included and uploads the APK as artifact **Minicode-APK**. Download it from the Actions tab → latest run → Artifacts.
+
+**Local:** Open the project in Android Studio. Place `deepseek-coder-1.3b-q4.gguf` in `app/src/main/assets/` (or get it from [TheBloke/deepseek-coder-1.3b-instruct-GGUF](https://huggingface.co/TheBloke/deepseek-coder-1.3b-instruct-GGUF)). Build → Build Bundle(s) / APK(s) → Build APK(s).
 
 No internet permission is required; the app works fully offline.
 
