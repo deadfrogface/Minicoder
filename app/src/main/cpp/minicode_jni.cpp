@@ -11,6 +11,9 @@
 #include <cmath>
 #include <cstring>
 #include <algorithm>
+
+static llama_model *s_model = nullptr;
+static llama_context *s_ctx = nullptr;
 #endif
 
 extern "C" {
@@ -39,8 +42,6 @@ Java_com_minicode_LlmEngine_nativeLoadModel(JNIEnv *env, jobject thiz, jstring p
         llama_model_free(model);
         return JNI_FALSE;
     }
-    static llama_model *s_model = nullptr;
-    static llama_context *s_ctx = nullptr;
     if (s_ctx) { llama_free(s_ctx); s_ctx = nullptr; }
     if (s_model) { llama_model_free(s_model); s_model = nullptr; }
     s_model = model;
