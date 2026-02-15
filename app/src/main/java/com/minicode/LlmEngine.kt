@@ -56,7 +56,6 @@ class LlmEngine(context: Context) {
                 }
                 mainHandler.post { callback(finalResult) }
             } catch (e: Exception) {
-                done.set(true)
                 mainHandler.post { callback(Result.failure(e)) }
             }
         }

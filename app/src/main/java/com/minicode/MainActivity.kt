@@ -120,19 +120,20 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnGenerate.setOnClickListener {
-            if (isGenerating) return
-            val uri = selectedFileUri
-            if (uri == null) {
+            if (isGenerating) return@setOnClickListener
+            val uri = selectedFileUri ?: run {
                 showError("Select a file first")
-                return
+                return@setOnClickListener
             }
             val content = fileManager.readFileContent(uri) ?: ""
             if (fileManager.isFileTooLarge(content)) {
                 showError(getString(R.string.file_too_large_title), getString(R.string.file_too_large_message))
-                return
+                return@setOnClickListener
             }
             val instruction = binding.etInstruction.text.toString()
             val contentForDiff = content
+            val projectUri = projectFolderUri
+            val selectedUri = selectedFileUri
             isGenerating = true
             binding.btnGenerate.isEnabled = false
             binding.btnApply.isEnabled = false
@@ -149,8 +150,8 @@ class MainActivity : AppCompatActivity() {
                         binding.tvFileContent.text = origSpan
                         binding.tvGeneratedContent.text = genSpan
                         statePersistence.saveState(
-                            projectFolderUri?.toString(),
-                            selectedFileUri?.toString(),
+                            projectUri?.toString(),
+                            selectedUri?.toString(),
                             binding.etInstruction.text.toString(),
                             output,
                             binding.spinnerLanguage.selectedItem.toString()
@@ -167,21 +168,20 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnApply.setOnClickListener {
-            val uri = selectedFileUri
-            if (uri == null) {
+            val uri = selectedFileUri ?: run {
                 showError("Select a file first")
-                return
+                return@setOnClickListener
             }
             val newContent = binding.tvGeneratedContent.text.toString()
             if (newContent.isEmpty()) {
                 showError("Nothing to apply. Generate first.")
-                return
+                return@setOnClickListener
             }
             val currentContent = fileManager.readFileContent(uri) ?: ""
             val backupUri = fileManager.createBackup(uri, currentContent)
             if (backupUri == null) {
                 showError("Could not create backup")
-                return
+                return@setOnClickListener
             }
             if (fileManager.applyChanges(uri, newContent)) {
                 loadFileContent()
@@ -197,7 +197,7 @@ class MainActivity : AppCompatActivity() {
             val text = binding.tvGeneratedContent.text.toString()
             if (text.isEmpty()) {
                 Toast.makeText(this, "Nothing to copy", Toast.LENGTH_SHORT).show()
-                return
+                return@setOnClickListener
             }
             (getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)?.setPrimaryClip(
                 ClipData.newPlainText("minicode", text)
@@ -206,15 +206,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnRestoreBackup.setOnClickListener {
-            val uri = selectedFileUri
-            if (uri == null) {
+            val uri = selectedFileUri ?: run {
                 showError("Select a file first")
-                return
+                return@setOnClickListener
             }
             val backups = fileManager.listBackupsForFile(uri)
             if (backups.isEmpty()) {
                 showError("No backups found for this file")
-                return
+                return@setOnClickListener
             }
             val names = backups.map { it.first }.toTypedArray()
             AlertDialog.Builder(this)
