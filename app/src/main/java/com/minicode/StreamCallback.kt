@@ -9,6 +9,10 @@ class StreamCallback(private val onTokenReceiver: (String) -> Unit) {
     @Volatile
     var cancelled = false
 
+    /** Set to Constants.CANCELLATION_REASON_SAFETY_LIMIT when stopped by safety guard (repeat/time/char limit). */
+    @Volatile
+    var cancellationReason: String? = null
+
     fun onToken(token: String) {
         onTokenReceiver(token)
     }

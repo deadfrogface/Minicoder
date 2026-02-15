@@ -109,14 +109,24 @@ class MainActivity : AppCompatActivity() {
                             )
                         },
                         onFailure = { e ->
-                            if (e !is CancellationException) {
-                                val msg = when (e.message) {
-                                    Constants.ERROR_TOO_COMPLEX -> getString(R.string.error_too_complex)
-                                    else -> e.message ?: "Generation failed"
+                            when (e) {
+                                is SafetyLimitException ->
+                                    Toast.makeText(
+                                        this,
+                                        getString(R.string.generation_stopped_safety_limit),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                is CancellationException -> { /* user cancelled */ }
+                                else -> {
+                                    val msg = when (e.message) {
+                                        Constants.ERROR_TOO_COMPLEX -> getString(R.string.error_too_complex)
+                                        else -> e.message ?: "Generation failed"
+                                    }
+                                    showError(msg)
                                 }
-                                showError(msg)
                             }
-                            binding.tvGeneratedContent.text = statePersistence.lastGeneratedOutput
+                            if (e is CancellationException)
+                                binding.tvGeneratedContent.text = statePersistence.lastGeneratedOutput
                             binding.btnCopy.isEnabled = binding.tvGeneratedContent.text.isNotEmpty()
                         }
                     )

@@ -37,7 +37,7 @@ class LlmEngine(context: Context) {
     /**
      * Start streaming generation. Runs off main thread. onToken is posted to main thread.
      * completion is invoked on main thread with full output or failure (including cancel).
-     * If a generation is already running, completion is invoked with failure and this returns.
+     * Safety guards: line repetition (3x), token sequence repetition (10+), max chars, max time.
      */
     fun generateStream(
         instruction: String,
@@ -61,9 +61,68 @@ class LlmEngine(context: Context) {
             return
         }
         val output = StringBuilder()
+        var lastGeneratedLine: String? = null
+        var previousGeneratedLine: String? = null
+        var repetitionCount = 0
+        val tokenBuffer = ArrayDeque<String>(Constants.TOKEN_SAFETY_BUFFER_SIZE)
+        val startTimeMs = System.currentTimeMillis()
+
         val callback = StreamCallback { token ->
+            if (callback.cancelled) return@StreamCallback
             output.append(token)
             mainHandler.post { onToken(token) }
+
+            // Hard limit: max output chars
+            if (output.length >= Constants.MAX_OUTPUT_CHARS) {
+                callback.cancelled = true
+                callback.cancellationReason = Constants.CANCELLATION_REASON_SAFETY_LIMIT
+                return@StreamCallback
+            }
+            // Hard limit: max generation time
+            if (System.currentTimeMillis() - startTimeMs >= Constants.MAX_GENERATION_TIME_MS) {
+                callback.cancelled = true
+                callback.cancellationReason = Constants.CANCELLATION_REASON_SAFETY_LIMIT
+                return@StreamCallback
+            }
+
+            // Line repetition: same full line 3 times consecutively
+            val lines = output.toString().split('\n')
+            if (lines.size >= 2) {
+                val lastCompleteLine = lines[lines.size - 2].trim()
+                if (lastCompleteLine.isNotEmpty()) {
+                    when {
+                        lastCompleteLine == lastGeneratedLine -> {
+                            repetitionCount++
+                            if (repetitionCount >= 3) {
+                                callback.cancelled = true
+                                callback.cancellationReason = Constants.CANCELLATION_REASON_SAFETY_LIMIT
+                                return@StreamCallback
+                            }
+                        }
+                        else -> {
+                            previousGeneratedLine = lastGeneratedLine
+                            lastGeneratedLine = lastCompleteLine
+                            repetitionCount = 1
+                        }
+                    }
+                }
+            }
+
+            // Token-level repetition: same sequence of 10+ tokens repeats consecutively
+            tokenBuffer.addLast(token)
+            if (tokenBuffer.size > Constants.TOKEN_SAFETY_BUFFER_SIZE) tokenBuffer.removeFirst()
+            if (tokenBuffer.size >= 2 * Constants.TOKEN_SAFETY_REPEAT_LEN) {
+                val list = tokenBuffer.toList()
+                for (n in Constants.TOKEN_SAFETY_REPEAT_LEN..minOf(Constants.TOKEN_SAFETY_BUFFER_SIZE / 2, list.size / 2)) {
+                    val tail = list.takeLast(n)
+                    val prev = list.dropLast(n).takeLast(n)
+                    if (tail == prev) {
+                        callback.cancelled = true
+                        callback.cancellationReason = Constants.CANCELLATION_REASON_SAFETY_LIMIT
+                        return@StreamCallback
+                    }
+                }
+            }
         }
         currentCallback = callback
         executor.execute {
@@ -71,19 +130,29 @@ class LlmEngine(context: Context) {
                 nativeGenerateStreaming(
                     fullPrompt,
                     Constants.MAX_OUTPUT_TOKENS,
-                    0.1f,
+                    0.2f,
+                    40,
                     0.9f,
-                    1.1f,
+                    1.18f,
+                    128,
                     42,
                     callback
                 )
                 val fullOutput = output.toString().trim()
                 val cancelled = callback.cancelled
+                val reason = callback.cancellationReason
                 mainHandler.post {
                     currentCallback = null
                     generationInProgress.set(false)
                     when {
-                        cancelled -> completion(Result.failure(java.util.concurrent.CancellationException("Cancelled")))
+                        cancelled -> completion(
+                            Result.failure(
+                                if (reason == Constants.CANCELLATION_REASON_SAFETY_LIMIT)
+                                    SafetyLimitException()
+                                else
+                                    java.util.concurrent.CancellationException("Cancelled")
+                            )
+                        )
                         fullOutput == Constants.ERROR_TOO_COMPLEX ||
                             (fullOutput.contains(Constants.ERROR_TOO_COMPLEX) &&
                                 fullOutput.lines().count { it.isNotBlank() } <= 1) ->
@@ -128,9 +197,14 @@ class LlmEngine(context: Context) {
         prompt: String,
         maxTokens: Int,
         temperature: Float,
+        topK: Int,
         topP: Float,
         repeatPenalty: Float,
+        repeatLastN: Int,
         seed: Int,
         callback: StreamCallback
     )
 }
+
+/** Thrown when generation was stopped by a safety limit (time, chars, repetition). */
+class SafetyLimitException : Exception("Generation stopped (safety limit)")

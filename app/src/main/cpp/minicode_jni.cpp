@@ -133,12 +133,16 @@ Java_com_minicode_LlmEngine_nativeUnloadModel(JNIEnv *env, jobject thiz) {
 
 JNIEXPORT void JNICALL
 Java_com_minicode_LlmEngine_nativeGenerateStreaming(JNIEnv *env, jobject thiz,
-    jstring prompt, jint max_tokens, jfloat temperature, jfloat top_p,
-    jfloat repeat_penalty, jint seed, jobject callback) {
+    jstring prompt, jint max_tokens, jfloat temperature, jint top_k, jfloat top_p,
+    jfloat repeat_penalty, jint repeat_last_n, jint seed, jobject callback) {
     (void) thiz;
-    (void) top_p;
-    (void) repeat_penalty;
 #ifdef LLAMA_AVAILABLE
+    const double temp = (temperature <= 0.f || temperature > 2.f) ? 0.2 : (double)temperature;
+    const int tk = (top_k <= 0) ? 40 : top_k;
+    const double tp = (top_p <= 0.f || top_p > 1.f) ? 0.9 : (double)top_p;
+    const double rp = (repeat_penalty <= 0.f) ? 1.18 : (double)repeat_penalty;
+    const int rln = (repeat_last_n <= 0) ? 128 : repeat_last_n;
+#endif
     if (!prompt || !env || !callback || !s_ctx) return;
     jclass callbackClass = env->GetObjectClass(callback);
     if (!callbackClass) return;
@@ -177,7 +181,10 @@ Java_com_minicode_LlmEngine_nativeGenerateStreaming(JNIEnv *env, jobject thiz,
     llama_sampler_chain_params sparams = llama_sampler_chain_default_params();
     llama_sampler *smpl = llama_sampler_chain_init(sparams);
     if (!smpl) { env->DeleteGlobalRef(callbackRef); return; }
-    llama_sampler_chain_add(smpl, llama_sampler_init_temp((double)(temperature <= 0.f ? 1e-6f : temperature)));
+    llama_sampler_chain_add(smpl, llama_sampler_init_temp(temp));
+    llama_sampler_chain_add(smpl, llama_sampler_init_top_k(tk));
+    llama_sampler_chain_add(smpl, llama_sampler_init_top_p(tp));
+    llama_sampler_chain_add(smpl, llama_sampler_init_repeat_penalty(rp, rln));
     llama_sampler_chain_add(smpl, llama_sampler_init_dist((uint32_t)(seed & 0xFFFFFFFFu)));
     char piece[64];
     const llama_token eos = llama_vocab_eos(vocab);
@@ -203,6 +210,10 @@ Java_com_minicode_LlmEngine_nativeGenerateStreaming(JNIEnv *env, jobject thiz,
     (void) prompt;
     (void) max_tokens;
     (void) temperature;
+    (void) top_k;
+    (void) top_p;
+    (void) repeat_penalty;
+    (void) repeat_last_n;
     (void) seed;
     (void) callback;
 #endif
