@@ -10,18 +10,18 @@ Offline Android AI mini codewriter. Edits one file at a time, outputs full file 
 
 ## Model
 
-- **Only one model file** is supported in assets: **DeepSeek-Coder 1.3B GGUF Q4**.
-- **Filename:** `deepseek-coder-1.3b-q4.gguf`
-- **Path:** `app/src/main/assets/deepseek-coder-1.3b-q4.gguf`
-- **Target size:** ~65–70 MB (use Q4_0 or smallest Q4 variant; note: public 1.3B Q4 GGUF are typically 650–800 MB; for APK &lt;120 MB the CI build does **not** bundle the model—add it manually for full offline use).
+- **Recommended model:** **SmolLM2-360M-Instruct Q4_0** (229 MB). See [MODEL_CHOICE.md](MODEL_CHOICE.md) for the selection rationale.
+- **Only one model file** is supported; the app expects this **filename:** `deepseek-coder-1.3b-q4.gguf`
+- **Path (optional bundle):** `app/src/main/assets/deepseek-coder-1.3b-q4.gguf`
+- **Target size:** 229 MB (SmolLM2-360M-Instruct Q4_0). For APK &lt;120 MB the CI build does **not** bundle the model—add it manually for full offline use.
 
-Obtain the model from [TheBloke/deepseek-coder-1.3b-instruct-GGUF](https://huggingface.co/TheBloke/deepseek-coder-1.3b-instruct-GGUF) or similar. The app copies it from assets to internal storage on first run.
+Download **SmolLM2-360M-Instruct.Q4_0.gguf** from [QuantFactory/SmolLM2-360M-Instruct-GGUF](https://huggingface.co/QuantFactory/SmolLM2-360M-Instruct-GGUF), rename it to `deepseek-coder-1.3b-q4.gguf`, then place it in assets or copy to app storage. The app copies from assets to internal storage on first run if present.
 
 ## Build
 
-**GitHub Action:** On every push to `main`, the workflow builds a **release** APK (no model bundled, to keep size under 120 MB) and uploads it as artifact **Minicode-APK**. Download from Actions → latest run → Artifacts. Add `deepseek-coder-1.3b-q4.gguf` to the app’s internal storage or assets for full offline use.
+**GitHub Action:** On every push to `main`, the workflow clones llama.cpp, builds the app (arm64 release, signed), and uploads the **finished APK** as artifact **Minicode-APK** (no model bundled; size under 120 MB). Download from Actions → latest run → Artifacts. Add the model file as `deepseek-coder-1.3b-q4.gguf` (recommended: SmolLM2-360M-Instruct Q4_0, 229 MB) to the app’s internal storage or assets for full offline use.
 
-**Local:** Open the project in Android Studio. Optionally place `deepseek-coder-1.3b-q4.gguf` in `app/src/main/assets/` for a full build. Build → Build Bundle(s) / APK(s) → Build APK(s). APK is arm64-only, stripped, minified.
+**Local:** Open the project in Android Studio. Optionally place the model as `deepseek-coder-1.3b-q4.gguf` in `app/src/main/assets/` for a full build. Build → Build Bundle(s) / APK(s) → Build APK(s). APK is arm64-only, stripped, minified.
 
 No internet permission is required; the app works fully offline.
 
