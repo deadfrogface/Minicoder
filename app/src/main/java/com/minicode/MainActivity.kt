@@ -3,12 +3,8 @@ package com.minicode
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.widget.ArrayAdapter
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.minicode.databinding.ActivityMainBinding
@@ -16,39 +12,19 @@ import com.minicode.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var fileManager: FileManager
     private lateinit var llmEngine: LlmEngine
     private lateinit var statePersistence: StatePersistence
 
-    private var projectFolderUri: Uri? = null
-    private var selectedFileUri: Uri? = null
-    private var fileList: List<Pair<String, Uri>> = emptyList()
     private var isGenerating = false
-
-    private val openFolderLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        uri?.let { u ->
-            contentResolver.takePersistableUriPermission(
-                u,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-            projectFolderUri = u
-            statePersistence.projectFolderUri = u.toString()
-            loadFileList()
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        fileManager = FileManager(this)
         statePersistence = StatePersistence(this)
         llmEngine = LlmEngine(this)
 
-        setupLanguageSpinner()
         loadModelIfNeeded()
         restoreState()
         setupListeners()
@@ -57,13 +33,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         statePersistence.instruction = binding.etInstruction.text.toString()
-        statePersistence.selectedLanguage = binding.spinnerLanguage.selectedItem.toString()
         statePersistence.lastGeneratedOutput = binding.tvGeneratedContent.text.toString()
-    }
-
-    private fun setupLanguageSpinner() {
-        val languages = arrayOf("JS", "Python", "HTML", "Other")
-        binding.spinnerLanguage.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, languages)
     }
 
     private fun loadModelIfNeeded() {
@@ -86,75 +56,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun restoreState() {
-        val state = statePersistence.loadState()
-        state.projectFolderUri?.let { uriStr ->
-            projectFolderUri = Uri.parse(uriStr)
-            loadFileList()
-        }
-        state.selectedFilePath?.let { uriStr ->
-            selectedFileUri = Uri.parse(uriStr)
-            loadFileContent()
-        }
-        binding.etInstruction.setText(state.instruction)
-        binding.tvGeneratedContent.text = state.generatedContent
-        val langIndex = when (state.selectedLanguage) {
-            "JS" -> 0
-            "Python" -> 1
-            "HTML" -> 2
-            else -> 3
-        }
-        binding.spinnerLanguage.setSelection(langIndex)
+        binding.etInstruction.setText(statePersistence.instruction)
+        binding.tvGeneratedContent.text = statePersistence.lastGeneratedOutput
     }
 
     private fun setupListeners() {
-        binding.btnSelectFolder.setOnClickListener {
-            openFolderLauncher.launch(null)
-        }
-
-        binding.listFiles.setOnItemClickListener { _, _, position, _ ->
-            if (position < fileList.size) {
-                selectedFileUri = fileList[position].second
-                statePersistence.selectedFilePath = selectedFileUri?.toString()
-                loadFileContent()
-            }
-        }
-
         binding.btnGenerate.setOnClickListener {
             if (isGenerating) return@setOnClickListener
-            val uri = selectedFileUri ?: run {
-                showError("Select a file first")
-                return@setOnClickListener
-            }
-            val content = fileManager.readFileContent(uri) ?: ""
-            if (fileManager.isFileTooLarge(content)) {
-                showError(getString(R.string.file_too_large_title), getString(R.string.file_too_large_message))
-                return@setOnClickListener
-            }
             val instruction = binding.etInstruction.text.toString()
-            val contentForDiff = content
-            val projectUri = projectFolderUri
-            val selectedUri = selectedFileUri
+            if (instruction.isBlank()) {
+                showError(getString(R.string.enter_instruction))
+                return@setOnClickListener
+            }
             isGenerating = true
             binding.btnGenerate.isEnabled = false
-            binding.btnApply.isEnabled = false
             binding.btnCopy.isEnabled = false
 
-            llmEngine.generate(instruction, content) { result ->
+            llmEngine.generate(instruction, "") { result ->
                 isGenerating = false
                 binding.btnGenerate.isEnabled = true
-                binding.btnApply.isEnabled = true
                 binding.btnCopy.isEnabled = true
                 result.fold(
                     onSuccess = { output ->
-                        val (origSpan, genSpan) = DiffUtil.computeLineDiff(contentForDiff, output)
-                        binding.tvFileContent.text = origSpan
-                        binding.tvGeneratedContent.text = genSpan
+                        binding.tvGeneratedContent.text = output
                         statePersistence.saveState(
-                            projectUri?.toString(),
-                            selectedUri?.toString(),
                             binding.etInstruction.text.toString(),
-                            output,
-                            binding.spinnerLanguage.selectedItem.toString()
+                            output
                         )
                     },
                     onFailure = { e ->
@@ -164,32 +91,6 @@ class MainActivity : AppCompatActivity() {
                         showError(msg)
                     }
                 )
-            }
-        }
-
-        binding.btnApply.setOnClickListener {
-            val uri = selectedFileUri ?: run {
-                showError("Select a file first")
-                return@setOnClickListener
-            }
-            val newContent = binding.tvGeneratedContent.text.toString()
-            if (newContent.isEmpty()) {
-                showError("Nothing to apply. Generate first.")
-                return@setOnClickListener
-            }
-            val currentContent = fileManager.readFileContent(uri) ?: ""
-            val backupUri = fileManager.createBackup(uri, currentContent)
-            if (backupUri == null) {
-                showError("Could not create backup")
-                return@setOnClickListener
-            }
-            if (fileManager.applyChanges(uri, newContent)) {
-                loadFileContent()
-                binding.tvGeneratedContent.text = ""
-                statePersistence.lastGeneratedOutput = ""
-                Toast.makeText(this, "Changes applied", Toast.LENGTH_SHORT).show()
-            } else {
-                showError("Failed to apply changes")
             }
         }
 
@@ -204,46 +105,6 @@ class MainActivity : AppCompatActivity() {
             )
             Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show()
         }
-
-        binding.btnRestoreBackup.setOnClickListener {
-            val uri = selectedFileUri ?: run {
-                showError("Select a file first")
-                return@setOnClickListener
-            }
-            val backups = fileManager.listBackupsForFile(uri)
-            if (backups.isEmpty()) {
-                showError("No backups found for this file")
-                return@setOnClickListener
-            }
-            val names = backups.map { it.first }.toTypedArray()
-            AlertDialog.Builder(this)
-                .setTitle(getString(R.string.restore_backup))
-                .setItems(names) { _, which ->
-                    val backupUri = backups[which].second
-                    if (fileManager.restoreFromBackup(backupUri, uri)) {
-                        loadFileContent()
-                        Toast.makeText(this, "Restored", Toast.LENGTH_SHORT).show()
-                    } else {
-                        showError("Restore failed")
-                    }
-                }
-                .show()
-        }
-    }
-
-    private fun loadFileList() {
-        val uri = projectFolderUri ?: return
-        fileList = fileManager.listFilesInFolder(uri)
-        binding.listFiles.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_list_item_1,
-            fileList.map { it.first }
-        )
-    }
-
-    private fun loadFileContent() {
-        val uri = selectedFileUri ?: return
-        binding.tvFileContent.text = fileManager.readFileContent(uri) ?: ""
     }
 
     private fun showError(message: String) {
@@ -252,9 +113,5 @@ class MainActivity : AppCompatActivity() {
             .setMessage(message)
             .setPositiveButton(android.R.string.ok, null)
             .show()
-    }
-
-    private fun showError(title: String, message: String) {
-        AlertDialog.Builder(this).setTitle(title).setMessage(message).setPositiveButton(android.R.string.ok, null).show()
     }
 }

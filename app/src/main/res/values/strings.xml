@@ -2,7 +2,8 @@
 <resources>
     <string name="app_name">Minicode</string>
     <string name="select_project_folder">Select project folder</string>
-    <string name="instruction_hint">Describe what should change in this file</string>
+    <string name="instruction_hint">Describe what code you want (e.g. language if needed)</string>
+    <string name="enter_instruction">Enter an instruction first.</string>
     <string name="generate">GENERATE</string>
     <string name="apply_changes">APPLY CHANGES</string>
     <string name="copy">COPY</string>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -12,62 +13,46 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <Button
-            android:id="@+id/btnSelectFolder"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/select_project_folder" />
+            android:minHeight="80dp">
 
-        <ListView
-            android:id="@+id/listFiles"
-            android:layout_width="match_parent"
-            android:layout_height="120dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/original"
-            android:textStyle="bold" />
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="100dp">
-            <TextView
-                android:id="@+id/tvFileContent"
+            <EditText
+                android:id="@+id/etInstruction"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:focusable="false"
-                android:inputType="none"
-                android:scrollbars="vertical"
-                android:textSize="12sp" />
-        </ScrollView>
+                android:minLines="3"
+                android:gravity="top|start"
+                android:paddingEnd="52dp"
+                android:paddingBottom="12dp"
+                android:hint="@string/instruction_hint"
+                android:inputType="textMultiLine"
+                android:background="?android:attr/editTextBackground" />
 
-        <EditText
-            android:id="@+id/etInstruction"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minLines="3"
-            android:hint="@string/instruction_hint"
-            android:inputType="textMultiLine" />
-
-        <Spinner
-            android:id="@+id/spinnerLanguage"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <Button
-            android:id="@+id/btnGenerate"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/generate" />
+            <ImageButton
+                android:id="@+id/btnGenerate"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="end|bottom"
+                android:layout_marginEnd="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/generate"
+                android:src="@drawable/ic_send_arrow"
+                android:scaleType="centerInside" />
+        </FrameLayout>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:text="@string/generated"
             android:textStyle="bold" />
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="100dp">
+            android:layout_height="wrap_content"
+            android:minHeight="160dp">
             <TextView
                 android:id="@+id/tvGeneratedContent"
                 android:layout_width="match_parent"
@@ -78,28 +63,11 @@
                 android:textSize="12sp" />
         </ScrollView>
 
-        <LinearLayout
+        <Button
+            android:id="@+id/btnCopy"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btnApply"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/apply_changes" />
-            <Button
-                android:id="@+id/btnCopy"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/copy" />
-            <Button
-                android:id="@+id/btnRestoreBackup"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/restore_backup" />
-        </LinearLayout>
+            android:layout_marginTop="8dp"
+            android:text="@string/copy" />
     </LinearLayout>
 </ScrollView>
