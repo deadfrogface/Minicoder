@@ -67,21 +67,23 @@ class LlmEngine(context: Context) {
         val tokenBuffer = ArrayDeque<String>(Constants.TOKEN_SAFETY_BUFFER_SIZE)
         val startTimeMs = System.currentTimeMillis()
 
-        val callback = StreamCallback { token ->
-            if (callback.cancelled) return@StreamCallback
+        var callback: StreamCallback? = null
+        callback = StreamCallback { token ->
+            val cb = callback!!
+            if (cb.cancelled) return@StreamCallback
             output.append(token)
             mainHandler.post { onToken(token) }
 
             // Hard limit: max output chars
             if (output.length >= Constants.MAX_OUTPUT_CHARS) {
-                callback.cancelled = true
-                callback.cancellationReason = Constants.CANCELLATION_REASON_SAFETY_LIMIT
+                cb.cancelled = true
+                cb.cancellationReason = Constants.CANCELLATION_REASON_SAFETY_LIMIT
                 return@StreamCallback
             }
             // Hard limit: max generation time
             if (System.currentTimeMillis() - startTimeMs >= Constants.MAX_GENERATION_TIME_MS) {
-                callback.cancelled = true
-                callback.cancellationReason = Constants.CANCELLATION_REASON_SAFETY_LIMIT
+                cb.cancelled = true
+                cb.cancellationReason = Constants.CANCELLATION_REASON_SAFETY_LIMIT
                 return@StreamCallback
             }
 
@@ -94,8 +96,8 @@ class LlmEngine(context: Context) {
                         lastCompleteLine == lastGeneratedLine -> {
                             repetitionCount++
                             if (repetitionCount >= 3) {
-                                callback.cancelled = true
-                                callback.cancellationReason = Constants.CANCELLATION_REASON_SAFETY_LIMIT
+                                cb.cancelled = true
+                                cb.cancellationReason = Constants.CANCELLATION_REASON_SAFETY_LIMIT
                                 return@StreamCallback
                             }
                         }
@@ -117,14 +119,15 @@ class LlmEngine(context: Context) {
                     val tail = list.takeLast(n)
                     val prev = list.dropLast(n).takeLast(n)
                     if (tail == prev) {
-                        callback.cancelled = true
-                        callback.cancellationReason = Constants.CANCELLATION_REASON_SAFETY_LIMIT
+                        cb.cancelled = true
+                        cb.cancellationReason = Constants.CANCELLATION_REASON_SAFETY_LIMIT
                         return@StreamCallback
                     }
                 }
             }
         }
         currentCallback = callback
+        val cb = callback!!
         executor.execute {
             try {
                 nativeGenerateStreaming(
@@ -136,11 +139,11 @@ class LlmEngine(context: Context) {
                     1.18f,
                     128,
                     42,
-                    callback
+                    cb
                 )
                 val fullOutput = output.toString().trim()
-                val cancelled = callback.cancelled
-                val reason = callback.cancellationReason
+                val cancelled = cb.cancelled
+                val reason = cb.cancellationReason
                 mainHandler.post {
                     currentCallback = null
                     generationInProgress.set(false)

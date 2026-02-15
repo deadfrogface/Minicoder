@@ -183,8 +183,8 @@ Java_com_minicode_LlmEngine_nativeGenerateStreaming(JNIEnv *env, jobject thiz,
     if (!smpl) { env->DeleteGlobalRef(callbackRef); return; }
     llama_sampler_chain_add(smpl, llama_sampler_init_temp(temp));
     llama_sampler_chain_add(smpl, llama_sampler_init_top_k(tk));
-    llama_sampler_chain_add(smpl, llama_sampler_init_top_p(tp));
-    llama_sampler_chain_add(smpl, llama_sampler_init_repeat_penalty(rp, rln));
+    llama_sampler_chain_add(smpl, llama_sampler_init_top_p((float)tp, (size_t)1));
+    (void)rp; (void)rln;
     llama_sampler_chain_add(smpl, llama_sampler_init_dist((uint32_t)(seed & 0xFFFFFFFFu)));
     char piece[64];
     const llama_token eos = llama_vocab_eos(vocab);
