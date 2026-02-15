@@ -34,9 +34,6 @@ obj/
 # Cloned in CI; do not commit
 native/
 
-# Model file (large); add manually for local build
-app/src/main/assets/*.gguf
-
 # Misc
 .DS_Store
 *.log
