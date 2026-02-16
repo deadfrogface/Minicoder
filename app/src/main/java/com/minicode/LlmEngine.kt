@@ -71,7 +71,8 @@ class LlmEngine(context: Context) {
             val cb = callback!!
             if (cb.cancelled) return@StreamCallback
             output.append(token)
-            mainHandler.post { onToken(token) }
+            // TEMPORARY: token-by-token streaming disabled for debugging; full output shown only on completion
+            // mainHandler.post { onToken(token) }
 
             // Hard limit: max output chars
             if (output.length >= Constants.MAX_OUTPUT_CHARS) {
